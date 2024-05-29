@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>DShare Web</title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="wasm_exec.js"></script>
+        <script src="script.js"></script>
+        <script>
+            const go = new Go();
+            run = async () => {
+                WebAssembly.instantiateStreaming(fetch("app.wasm"), go.importObject).then((result) => {
+                    go.run(result.instance);
+
+                    let fileInput = document.getElementById("fileInput");
+                    fileInput.addEventListener("change", function(e) {
+                        console.log(e.target.files)
+                        if (e.target.files.length <= 0) {
+                            return
+                        }
+                        let fname = e.target.files[0].name
+                        console.log(fname)
+                        let query = `http://localhost:43480/protoMsg?msg=share%20${fname}`
+                        console.log(query)
+                        fetch(query).then(
+                            response => {
+                                if (!response.ok) {
+                                    console.log(status)
+                                    return ""
+                                }
+                                return response.json()
+                            }
+                        ).then(obj => {
+                            if (obj != "") {
+                                addProgressBox(obj)
+                            }
+                        })
+                    })
+
+                    let searchBox = document.getElementById("searchBox")
+                    let searchBtn = document.getElementById("search-icon")
+                    searchBtn.addEventListener("click", function(e) {
+                        if (searchBox.value == "") {
+                            return
+                        }
+                        let fname = searchBox.value
+                        let query = `http://localhost:43480/protoMsg?msg=receive%20${fname}`
+                        fetch(query).then(
+                            response => {
+                                console.log(response)
+                                if (!response.ok) {
+                                    console.log(response.status)
+                                    return ""
+                                }
+                                return response.json()
+                            }
+                        ).then(obj => {
+                            console.log(obj)
+                            if (obj.result == 0) {
+                                console.log(obj)
+                                createErrorBox("File Not Shared")
+                                return 
+                            }
+                            if (obj != "") {
+                                addProgressBox(obj)
+                            }
+                        })
+                    })
+
+                    let settingBtn = document.getElementById("setting")
+                    let dropDown = document.getElementById("dropdown")
+                    settingBtn.addEventListener("click", function(e) {
+                        if (dropDown.style.display == "none") {
+                            dropDown.style.display = "flex"
+                            dropDown.style.animation = "appear .5s forwards"
+                        } else {
+                            dropDown.style.display = "none"
+                        }
+                    })
+                    dropDown.addEventListener("click", function(e) {
+                        console.log("click")
+                        let query = `http://localhost:43480/protoMsg?msg=path`
+                        fetch(query).then(
+                            response => {
+                                if (!response.ok) {
+                                    console.log(status)
+                                    return ""
+                                }
+                                return response.json()
+                            }
+                        ).then(obj => {
+                            console.log(obj)
+                            alert(obj.path+"/share\n"+obj.path+"/receive")
+                        })
+                    })
+                })
+            }
+            run()
+        </script>
+    </head>
+    <body>
+        <!-- NavBar -->
+        <div class="navbar">
+            <div class="logo">
+                <img src="icons/logo.png" alt="App's Logo">
+                <span class="bold">DShare</span>
+                <span>  Web</span>
+            </div>
+            <div class="search-bar">
+                <input type="text" name="search" id="searchBox" placeholder="Search File">
+                <span id="search-icon">
+                    <img src="icons/search.png" />
+                </span>
+            </div>
+            <div class="settings">
+                <img id="setting" src="icons/settings.png" title="Settings"/>
+                <div id="dropdown" style="display: none;">
+                    <span>Default Path</span>
+                </div>
+            </div>
+        </div>
+        <!-- Main Content -->
+        <div class="btn-cont">
+            <div class="button-line">
+                <label id="fBtn" class="button">
+                    <input type="file" id="fileInput" value=""/>
+                    <span>Transfer</span>
+                    <img src="icons/plus.png">                 
+                </label>
+            </div>
+        </div>
+        <div class="cont">
+            <!-- <div class="main-div">  
+                <div class="left-con"> 
+                    <img src="icons/share.png">
+                </div>
+                <div class="right-con">
+                    <div class="first-line">
+                        <span class="file-name">someFile.txt</span>
+                        <label class="switch_c"> 
+                            <input type="checkbox" checked />
+                            <span class="switch"></span>
+                        </label> 
+                    </div>
+                    <div class="info">
+                        <span class="status">Downloading</span>  
+                        <span class="peers-num">
+                            <img class="icon" src="icons/community.png" alt="an image">
+                            <span class="peers">30</span>
+                        </span> 
+                        <span class="file-size">
+                            <img class="icon" src="icons/download.png" alt="An image">
+                            <span class="dinfo">10 MB/20 MB</span>
+                        </span>
+                        <span class="percent">1%</span>
+                    </div>
+                    <div class="progress-box">
+                        <div class="progress" style="width: 1%;"></div>
+                    </div>
+                </div>
+            </div> -->
+        </div>
+        <div id="error-line">
+            <!-- <div class="error">
+                <span class="text">File Not Found</span>
+                <div class="line"></div>
+            </div> -->
+        </div>
+    </body>
+</html>
